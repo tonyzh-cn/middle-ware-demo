@@ -1,0 +1,11 @@
+server:
+  port: 8888
+pulsar:
+  # 命名空间名称
+  namespace: namespace_java
+  # 服务接入地址
+  service-url: http://pulsar-w7eognxxx.tdmq.ap-gz.public.tencenttdmq.com:8080
+  # 授权角色密钥
+  token-auth-value: eyJrZXlJZC......
+  # 集群id
+  tenant: pulsar-w7eognxxx

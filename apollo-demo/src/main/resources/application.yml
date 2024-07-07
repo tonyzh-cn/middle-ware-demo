@@ -1,0 +1,10 @@
+apollo:
+  bootstrap:
+    enabled: true
+    namespaces: application
+app:
+  id:
+    SampleApp
+
+server:
+  port: 8888
