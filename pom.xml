@@ -11,6 +11,7 @@
     <modules>
         <module>apollo-demo</module>
         <module>tdmq-demo</module>
+        <module>saturn-demo</module>
     </modules>
 
     <properties>
