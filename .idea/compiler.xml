@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="apollo-demo" />
+        <module name="mockito-demo" />
         <module name="redis-demo" />
         <module name="rocketmq-demo" />
         <module name="saturn-demo" />
