@@ -2,10 +2,51 @@ server:
   port: 8888
 pulsar:
   # 命名空间名称
-  namespace: namespace_java
+  namespace: commtest
   # 服务接入地址
   service-url: http://pulsar-w7eognxxx.tdmq.ap-gz.public.tencenttdmq.com:8080
   # 授权角色密钥
-  token-auth-value: eyJrZXlJZC......
+  token-auth-value: eyJrZXlJZCI6InB1bHNhci0yNGVhbjg3eGo5cm4iLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwdWxzYXItMjRlYW44N3hqOXJuX2NvbW10ZXN0In0.6X_2-PgCkGOKbuanN7u5LmPeNR-XOc2DfJpjXZ7-5-o
   # 集群id
-  tenant: pulsar-w7eognxxx
+  tenant: pulsar-24ean87xj9rn
+
+spring:
+  cloud:
+    function:
+      definition: fooProcessor;barLogger
+    stream:
+      output-bindings: fooSupplier-out-0
+      bindings:
+        fooSupplier-out-0:
+          producer:
+            use-native-encoding: true
+        fooProcessor-in-0:
+          destination: fooSupplier-out-0
+          consumer:
+            use-native-decoding: true
+        fooProcessor-out-0:
+          destination: fooProcessor-out-0
+          producer:
+            use-native-encoding: true
+        barLogger-in-0:
+          destination: fooProcessor-out-0
+          consumer:
+            use-native-decoding: true
+      pulsar:
+        bindings:
+          fooSupplier-out-0:
+            producer:
+              schema-type: JSON
+              message-type: com.example.SpringPulsarBinderSampleApp.Foo
+          fooProcessor-in-0:
+            consumer:
+              schema-type: JSON
+              message-type: com.example.SpringPulsarBinderSampleApp.Foo
+          fooProcessor-out-0:
+            producer:
+              schema-type: JSON
+              message-type: com.example.SpringPulsarBinderSampleApp.Bar
+          barLogger-in-0:
+            consumer:
+              schema-type: JSON
+              message-type: com.example.SpringPulsarBinderSampleApp.Bar

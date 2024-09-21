@@ -1,0 +1,446 @@
+syntax = "proto2";
+option java_package = "com.example.demo.protobuf.proto";
+
+package proto.demo;
+import "proto_basic.proto";
+
+// @server: revoloan_quota_srv
+// appid:credit.revolving_credit_quota.revoloan_quota_srv
+// @port: 8120
+// @author: qiaojun.xiao,zenan.zhang,ocean.mao
+
+//错误码
+enum ErrorCode {
+    //可重试
+    SYSTEM_ERROR = 99; //系统内部错误
+    CAS_CONFLICT = 10000; //CAS冲突，请稍后重试
+    THIRD_SERVER_EXCEPTION = -999; //第三方服务异常
+
+    //不可重试
+    INVALID_PARAMETER = -9; //参数错误
+    PRODUCT_RECORD_NOT_EXIST = 20010; //产品额度信息不存在
+    SUB_PRODUCT_RECORD_NOT_EXIST = 20011; //子产品额度信息不存在
+    LOAN_TYPE_RECORD_NOT_EXIST = 20012; //项目额度信息不存在
+    QUOTA_RECORD_NOT_FULL = 20013; //额度信息不正确
+    FLOW_TYPE_INVALID = 20020; //流水类型错误
+    PRODUCT_AMOUNT_NOT_ENOUGH = 20030; //产品额度不足
+    SUB_PRODUCT_AMOUNT_NOT_ENOUGH = 20031; //子产品额度不足
+    LOAN_TYPE_AMOUNT_NOT_ENOUGH = 20032; //项目额度不足
+    PRODUCT_AMOUNT_OVERFULL_QUOTA = 20040; //产品额度超过可恢复额度
+    SUB_PRODUCT_AMOUNT_OVERFULL_QUOTA = 20041; //子产品额度超过可恢复额度
+    LOAN_TYPE_AMOUNT_OVERFULL_QUOTA = 20042; //项目额度超过可恢复额度
+    PRODUCT_STRUCTURE_VALID_FAILED = 20080; //产品结构校验不通过
+    PRODUCT_RECORD_IS_EXPIRED = 20090; //产品额度信息已过期"
+    SUB_PRODUCT_RECORD_IS_EXPIRED = 20091; //子产品额度信息已过期
+    LOAN_TYPE_RECORD_IS_EXPIRED = 20092; //项目额度信息已过期
+    CHANGE_QUOTA_STATUS_INVALID = 20093; //扣减/恢复额度状态非法
+    CHANGE_QUOTA_AMOUNT_INVALID = 20094; //扣减/恢复额度金额非法
+}
+
+//流水类型
+enum CardFlowType {
+    OFFLINE_CONSUME_FLOW = 1; //线下消费 --扣减
+    OFFLINE_REVOKE_FLOW = 2; //线下消费撤销
+    OFFLINE_REFUND_FLOW = 3; //线下消费退款
+    WITHDRAW_FLOW = 4; //借款(提现) --扣减
+    REPAY_CONSUME = 7; //还消费
+    REPAY_WITDRAW = 8; //还提现
+    REPAY_SEGMENT = 9; //还分期
+    ANNUAL_FEE_FLOW = 10; //年费 --扣减
+    REVERSAL_CONSUME_FLOW = 11; //线下消费冲正,把钱加回来
+    REVERSAL_REVOKE_FLOW = 12; //线下撤单冲正 --扣减
+    DEDUCT_SEGMENT_FLOW = 13; //账单分期(可以为负),增加已消费额度 --扣减
+    REVERSAL_SEGMENT_FLOW = 14; //撤销分期 减少已消费额度
+    REVERSAL_WITHDRAW_FLOW = 15; //撤销借款 减少已提现额度
+    ONLINE_CONSUME_FLOW = 20; //线上消费(app内发起) --扣减
+    ONLINE_REPAY_CONSUME_FLOW = 21; //还线上消费
+    ONLINE_REVERSAL_CONSUME_FLOW = 22; //线上消费撤销
+    REPAY_ANNUAL_FEE_FLOW = 23; //还年费
+    REPAY_PAID_MEMBER_FLOW = 24; //还付费会员
+    DEDUCT_PAID_MEMBER_FLOW = 25; //付费会员 --扣减
+
+    //内部流水
+    APPLY_FLOW = 10000; //申请
+    AUDIT_FLOW = 10001; //激活
+    ADJUST_ADD_FLOW = 10002; //调额(加)
+    ADJUST_SUB_FLOW = 10003; //调额(减)
+    ACTIVE_EXPIRED_FLOW = 10004; //额度未激活失效
+    EXPIRED_FLOW = 10005; //额度已激活失效
+    FROZEN_FLOW  = 10006; // 额度冻结
+    UNFROZEN_FLOW = 10007; // 额度解冻
+    MODIFY_USER_INFO = 10008; // 修改用户信息，当前修改用户等级和最大可提现次数
+    FROZEN_EXPIRED_FLOW = 10009; // 额度冻结失效
+    TEMP_EXPIRED_FLOW = 10010;   // 已激活的临时额度失效
+    UPDATE_WITH_DRAW_TIME = 10011; //更新当前可提现次数
+
+    //修数据流水
+    FIX_ADD_AMOUNT = 11000; //修数据流水,增加额度,三层(修数据mark备注原因)
+    FIX_SUBTRACT_AMOUNT = 11001; //修数据流水,扣减额度,三层(修数据mark备注原因) --扣减
+    FIX_SUBTRACT_AMOUNT_ALLOW_NEGATIVE = 11002; //修数据流水,扣减额度,允许扣成负数,三层(修数据mark备注原因) --扣减
+    FIX_ADD_SUB_PRODUCT_FLOW = 11003; //修数据流水,增加产品子产品额度(修数据mark备注原因)
+    FIX_SUBTRACT_SUB_PRODUCT_FLOW = 11004; //修数据流水,扣产品子产品额度,允许扣成负(修数据mark备注原因) --扣减
+    FIX_ADD_PRODUCT_FLOW = 11005; //修数据流水,增加产品层额度(修数据mark备注原因)
+    FIX_SUBTRACT_PRODUCT_FLOW = 11006; //修数据流水,扣产品层额度,允许扣成负(修数据mark备注原因) --扣减
+    FIX_AVAILABLE_QUOTA_FLOW = 11007; // 对账有问题时或初次跑可用额度脚本，修可用额度（修数据mark备注原因）
+}
+
+//cmq通知类型
+enum QuotaCmqType {
+    QUOTA_APPLY_TYPE = 410001;//申请通知
+    QUOTA_ACTIVE_TYPE = 410002;//激活通知
+    QUOTA_ADJUST_TYPE = 410003;//调整通知
+    QUOTA_CHANGE_TYPE = 410004;//扣减/恢复通知
+    QUOTA_NOT_ACTIVE_EXPIRED_TYPE = 410005;//未激活失效通知
+    QUOTA_ACTIVED_EXPIRED_TYPE = 410006;//已激活失效通知
+    QUOTA_FROZEN_TYPE = 410007; // 冻结通知
+    QUOTA_UNFROZEN_TYPE = 410008; // 解冻通知
+    QUOTA_MODIFY_USER_INFO = 410009; //修改用户通知
+    QUOTA_FROZEN_EXPIRED_TYPE = 410010; //已冻结失效通知
+    QUOTA_TEMP_ACTIVED_EXPIRED_TYPE = 410011; // 已激活临额失效通知
+}
+
+//额度状态
+enum QuotaStatus {
+    WAIT_ACTIVE = 1; //待激活
+    ACTIVE = 2; //生效中
+    ACTIVE_EXPIRED = 3; //未激活过期
+    EXPIRED = 4; //已激活过期
+    FROZEN  = 10; // 已冻结
+    FROZEN_EXPIRED = 11; // 已冻结过期
+
+    FRONZEN = 99; //冻结(用于迁移数据)
+}
+
+//额度层级
+enum QuotaLevel {
+    PRODUCT = 1; //产品额度
+    SUB_PRODUCT = 2; //子产品额度
+    LOAN_TYPE = 3; //项目额度
+}
+
+// 额度操作场景
+enum QuotaScene {
+    FROZEN_SCENE = 1;  // 冻结
+    UNFROZEN_SCENE = 2; // 解冻
+}
+
+message QuotaItem {
+    optional int64 amount = 1; //固定额度,申请必填
+    optional int64 amount_limit = 2; //固定额度限额,申请必填
+    optional int64 start_time = 3; //固定额度生效起始时间,非必填
+    optional int64 end_time = 4; //固定额度生效结束时间,非必填
+    optional int64 temp_amount = 5; //临时额度,非必填(旧)
+    optional int64 temp_amount_limit = 6; //临时额度限额,非必填(旧)
+    optional int64 temp_start_time = 9; //临时额度生效起始时间,非必填(旧)
+    optional int64 temp_end_time = 10; //临时额度生效结束时间,非必填(旧)
+    optional int32 status = 11; //额度状态 信贷维护 见enum QuotaStatus
+    optional int64 can_use_amount = 12; //可用额度(计算得出) 信贷维护
+    optional int64 quota_id = 13; //额度唯一编号 信贷维护
+    optional int64 quota_validity = 14; //额度有效期(秒),申请必填(从激活开始计算)
+    repeated TempAmountInfo temp_amount_info = 15;//临时额度数据
+    optional uint64 previous_amount = 16; // 调额前的额度取额度流水表中上一条记录若无上一条记录则取当前记录
+    optional int64 available_temp_quota = 17; //临额可用额度
+}
+
+message TempAmountInfo {
+    optional int64 temp_amount = 1; //临时额度,非必填
+    optional int64 temp_amount_limit = 2; //临时额度限额,非必填
+    optional int64 temp_start_time = 3; //临时额度生效起始时间,非必填
+    optional int64 temp_end_time = 4; //临时额度生效结束时间,非必填
+}
+
+//项目额度信息
+message LoanTypeQuota {
+    optional int32 loan_type = 1; //项目id
+    optional QuotaItem quota_item = 2; //项目额度详情
+}
+
+//子产品额度信息
+message SubProductQuota {
+    optional string apply_no = 1; //申请编号,必填
+    optional int32 sub_product_id = 2; //子产品id,必填
+    optional int64 activate_expire_time = 3; //激活有效期,必填
+    optional QuotaItem quota_item = 4; //子产品额度信息,必填
+    repeated LoanTypeQuota loan_type_quotas = 5; //项目额度信息
+}
+
+//产品额度
+message ProductQuota {
+    optional int32 product_id = 1; //产品id,必填
+    optional QuotaItem quota_item = 2; //产品额度详情,必填
+    repeated SubProductQuota sub_product_quotas = 3; //子产品额度,必填
+}
+
+//***
+//额度申请
+//@request CreditQuotaApplyRequest
+//@response CreditQuotaApplyResponse
+//@path /creditQuota/apply
+//@remark 第二次申请同一产品下的子产品额度 产品额度会更新为新传入的值
+//***
+message CreditQuotaApplyRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional int64 uid = 2; //用户id,必填
+    optional ProductQuota product_quota = 3; //产品额度,必填
+    optional string borrower_level = 4; // 用户等级
+    optional int32 maximum_withdraw_times =5; // 最大可提现次数
+}
+
+message CreditQuotaApplyResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+}
+
+//***
+//额度激活接口
+//@request CreditQuotaActivateRequest
+//@response CreditQuotaActivateResponse
+//@path /creditQuota/active
+//@remark 子产品额度和项目额度会校验申请编号是否一致
+//***
+message CreditQuotaActivateRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional int64 uid = 2; //用户id,必填
+    optional int32 product_id = 3; //产品id,必填
+    optional int32 sub_product_id = 4; //子产品id,必填
+    optional string apply_no = 5; //申请编号,必填
+}
+
+message CreditQuotaActivateResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+}
+
+//***
+//额度调整接口
+//@request CreditQuotaAdjustRequest
+//@response CreditQuotaAdjustResponse
+//@path /creditQuota/adjust
+//@remark 传什么值更新什么值
+//***
+message CreditQuotaAdjustRequest {
+    optional proto.basic.RequestBasic       basic           = 1;
+    optional string                         order_id        = 2; //订单id
+    optional int64                          uid             = 3; //用户id
+    optional ProductQuota                   product_quota   = 4; //产品额度
+    optional string                         mark            = 5; //备注
+    optional string                         extend_info     = 10;    //扩展信息
+}
+
+message CreditQuotaAdjustResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+}
+
+//***
+//额度扣减/恢复
+//@request CreditQuotaChangeRequest
+//@response CreditQuotaChangeResponse
+//@path /creditQuota/change
+//@remark 扣减子额度默认向上层扣减，未查询到子额度默认向上扣减父额度
+//***
+message CreditQuotaChangeRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional string order_id = 2; //订单id,必填
+    optional int32 flow_type = 3; //流水类型,必填
+    optional int64 uid = 4; // uid,必填
+    optional int32 product_id = 5; //产品id,必填
+    optional int32 sub_product_id = 6; //子产品id,非必填
+    optional int32 loan_type = 7; // loantype,非必填
+    optional string trade_id = 8; //交易id,必填
+    optional int64 amount = 9; //金额,必填
+    optional string mark = 10; //备注,必填
+}
+
+message CreditQuotaChangeResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+}
+
+//***
+//额度查询
+//@request CreditQuotaQueryRequest
+//@response CreditQuotaQueryResponse
+//@path /creditQuota/query
+//@remark
+//***
+message CreditQuotaQueryRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional int64 uid = 2; // uid,必填
+    optional int32 product_id = 3; //产品id,必填
+    optional int32 sub_product_id = 4; //子产品id,非必填
+}
+
+message CreditQuotaQueryResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+    optional ProductQuota product_quota = 2; //产品额度
+    optional string     borrower_level  = 3; // 用户等级
+    optional string     update_time     = 4; // 更新时间
+    optional string     adjust_order_id = 5; //最近一次调额时传入的order_id
+    optional int32     maximum_withdraw_times  = 6; // 最大可提现次数
+    optional int32     available_withdraw_times  = 7; // 当前可提现次数
+}
+
+//***
+//流水查询
+//@request GetCreditQuotaFlowRequest
+//@response GetCreditQuotaFlowResponse
+//@path /creditQuotaFlow/list
+//@remark
+//***
+message GetCreditQuotaFlowRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional int64 uid = 2; // uid,必填
+    optional int32 product_id = 3; //产品id,非必填
+    optional int32 sub_product_id = 4; //子产品id,非必填
+    optional int32 loan_type = 5; //项目id,非必填
+    optional string order_id = 6; //订单id,非必填 申请&激活接口的apply_no 调额&扣减的order_id
+    optional int32 page = 7; //第几页,非必填 默认为1
+    optional int32 pageSize = 8; //页大小,非必填 默认为20
+    optional int64 quota_id = 9; //额度唯一编号,非必填 和订单id组合查询
+    optional int32 quota_level = 10; //额度层级 见enum QuotaLevel
+    repeated int32 flow_type = 11; //流水类型,可选
+    optional int32 sort_type = 12; //0-时间倒序 1-时间升序 默认0
+}
+
+message GetCreditQuotaFlowResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+    optional int64 count = 2;
+    repeated CreditQuotaFlow credit_quota_flows = 3;
+}
+
+//***
+//额度流水按月查询（可查询已归档流水）
+//@request QueryCreditQuotaFlowByMonthRequest
+//@response QueryCreditQuotaFlowByMonthResponse
+//@path /creditQuotaFlow/queryByMonth
+//@remark
+//***
+message QueryCreditQuotaFlowByMonthRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional int64 uid              = 2; //uid,必填
+    optional int32 month            = 3; //月份,必填（eg:202001,最早为201905）
+    optional int32 product_id       = 4; //产品id,非必填
+    optional int32 sub_product_id   = 5; //子产品id,非必填
+    optional int32 loan_type        = 6; //项目id,非必填
+    repeated int32 flow_type        = 7; //流水类型,可选
+    //begin_flow_id规则如下
+    //1.第一次请求传0即可;
+    //2.按时间倒序排序传每次返回的min_flow_id
+    //3.按时间升序排序传每次返回的max_flow_id;
+    //4.返回不包含该flow_id的流水(因为上次请求已经返回)
+    optional int64 begin_flow_id    = 8; //flow_id起始,(必填)
+    optional int32 pageSize         = 9; //页大小,非必填 默认为20,最大值不超过500
+    optional int32 sort_type        = 10; //0-时间倒序 1-时间升序 默认0
+}
+
+message QueryCreditQuotaFlowByMonthResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+    optional int64 total_count      = 2; //总条数
+    optional int64 max_flow_id      = 3; //本次请求flow_id最大值
+    optional int64 min_flow_id      = 4; //本次请求flow_id最小值
+    repeated CreditQuotaFlow credit_quota_flows = 5;
+}
+
+//流水信息
+message CreditQuotaFlow {
+    optional int64 flow_id = 1; //流水id
+    optional int64 uid = 2; // uid
+    optional int32 product_id = 3; //产品id
+    optional int32 sub_product_id = 4; //子产品id
+    optional int32 loan_type = 5; //项目id
+    optional int32 quota_level = 6; //额度层级 见enum QuotaLevel
+    optional string order_id = 7; //订单id
+    optional string trade_id = 8; //交易id
+    optional int32 flow_type = 9; //流水类型,可选
+    optional int64 amount = 10; //金额
+    optional string flow_detail = 11; //流水明细 修改前和修改后的额度信息
+    optional string mark = 12; //备注
+    optional int64 create_time = 13; //创建时间
+    optional int64 quota_id = 14; //额度唯一编号
+    optional string borrower_level  = 15; // 用户等级
+}
+
+
+//***
+//额度冻结接口
+//@request CreditQuotaFrozenRequest
+//@response CreditQuotaFrozenResponse
+//@path /creditQuota/frozen
+//@remark
+//***
+message CreditQuotaFrozenRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional uint64 uid = 2; //用户id,必填
+    optional uint32 product_id = 3; //产品id,必填
+    optional uint32 sub_product_id = 4; //子产品id,必填
+    optional string apply_no = 5; //申请编号,必填
+}
+
+message CreditQuotaFrozenResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+}
+
+//***
+//额度解冻接口
+//@request CreditQuotaUnfrozenRequest
+//@response CreditQuotaUnfrozenResponse
+//@path /creditQuota/unfrozen
+//@remark
+//***
+message CreditQuotaUnfrozenRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional uint64 uid = 2; //用户id,必填
+    optional uint32 product_id = 3; //产品id,必填
+    optional uint32 sub_product_id = 4; //子产品id,必填
+    optional string apply_no = 5; //申请编号,必填
+}
+
+message CreditQuotaUnfrozenResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+}
+
+
+
+//***
+//修改循环额度用户信息，当前只修改用户等级
+//@request CreditQuotaModifyUserInfoRequest
+//@response CreditQuotaModifyUserInfoResponse
+//@path /creditQuota/modifyUserInfo
+//@remark
+//***
+message CreditQuotaModifyUserInfoRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    repeated CreditQuotaModifyUserInfo credit_quota_modify_userInfo = 2; // 循环额度用户信息
+}
+
+
+message CreditQuotaModifyUserInfo{
+    optional uint64 uid = 1; //用户id,必填
+    optional uint32 product_id = 2; //产品id,必填
+    optional uint32 sub_product_id = 3; //子产品id,必填
+    optional string borrower_level = 4; // 用户等级
+    optional int32  maximum_withdraw_times  = 5; // 最大可提现次数
+}
+
+
+message CreditQuotaModifyUserInfoResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+}
+
+
+//***
+//修改用户当前可提现次数
+//@request updateWithdrawTimeRequest
+//@response updateWithdrawTimeResponse
+//@path /creditQuota/update/withdrawTime
+//@remark
+//***
+message updateWithdrawTimeRequest {
+    optional proto.basic.RequestBasic basic = 1;
+    optional uint64 uid = 2; //用户id,必填
+    optional uint32 product_id = 3; //产品id,必填
+    optional int32  available_withdraw_times  = 4; // 当前可提现次数,必填
+    optional int32  scene  = 5; // 更改场景 必填
+}
+
+
+message updateWithdrawTimeResponse {
+    optional proto.basic.ResponseBasic basic = 1;
+} 

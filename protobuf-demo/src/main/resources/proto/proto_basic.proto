@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+option java_multiple_files = true;
+option java_package = "com.example.demo.protobuf.proto";
+option java_outer_classname = "BasicProto";
+
+package proto.basic;
+
+message RequestBasic {
+    optional    int64   time = 1;
+    optional    string  client_info = 2;
+    optional    int64   time_out = 3; // 超时时间，非时间戳 单位秒
+    optional 	int32 	platform = 4; //平台   1 PC, 2 App(ios), 3 App(android), 4 WX(ios),5 WX(android), 6 黄金(ios), 7黄金(android) ,8 H5 (android), 9：H5 IOS, 99 系统代扣, 100 其他
+}
+
+message ResponseBasic {
+    required    int32   code = 1;
+    optional    int64   time = 2;
+    optional    string  msg = 3;
+}
