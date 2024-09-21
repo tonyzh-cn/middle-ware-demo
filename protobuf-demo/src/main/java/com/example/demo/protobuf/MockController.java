@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 public class MockController {
     //这里需要设置produces为application/x-protobuf
-    @PostMapping(value = "proto",produces = "application/x-protobuf")
+    @PostMapping(
+            value = {"proto"},
+            produces = {"application/x-protobuf"}
+    )
     @ResponseBody
     public RevoloanQuotaSrv.CreditQuotaQueryResponse proto(@RequestBody RevoloanQuotaSrv.CreditQuotaQueryRequest request){
         return RevoloanQuotaSrv.CreditQuotaQueryResponse.newBuilder().setBorrowerLevel("hello").build();
@@ -20,7 +23,7 @@ public class MockController {
     @ResponseBody
     public String test(){
         try {
-            byte[] bodyBytes = HttpUtil.createPost("http://localhost:8080/mock/protobuf")
+            byte[] bodyBytes = HttpUtil.createPost("http://localhost:8080/mock/proto")
                     .header("Content-Type","application/x-protobuf")//这里需要设置请求头
                     .body(RevoloanQuotaSrv.CreditQuotaQueryRequest.newBuilder().setProductId(100).build().toByteArray())
                     .execute().bodyBytes();
