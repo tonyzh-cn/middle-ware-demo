@@ -47,7 +47,7 @@
                     <!-- 工具版本 -->
                     <protocArtifact>com.google.protobuf:protoc:${protobuf-java.version}:exe:${os.detected.classifier}</protocArtifact>
                     <!--默认值，proto源文件路径-->
-                    <protoSourceRoot>${project.basedir}/src/main/resources/proto</protoSourceRoot>
+                    <protoSourceRoot>${project.basedir}/src/main/resources</protoSourceRoot>
                     <!--默认值，proto目标java文件路径-->
                     <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
                     <!--设置是否在生成java文件之前清空outputDirectory的文件，默认值为true，设置为false时也会覆盖同名文件-->
