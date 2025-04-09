@@ -21,12 +21,12 @@ public class SimpleProducer {
         // 构建生产者
         Producer<String> producer = pulsarClient.newProducer(Schema.STRING)
                 // topic完整路径，格式为persistent://集群（租户）ID/命名空间/Topic名称
-                .topic("persistent://pulsar-24ean87xj9rn/commtest/adIdEventTopic").create();
+                .topic("persistent://pulsar-24ean87xj9rn/commtest/xcrm-create-task").create();
         System.out.println(">> pulsar producer created.");
 
 //        producer.send("1");
 //        producer.send("2");
-        producer.send("{\"event\":\"add\",\"campaignId\":2443,\"updateTime\":1721700419,\"adIdList\":[\"1100749024\"]}\n");
+        producer.send("{\"batchId\":\"4225027\",\"id\":218709874}");
 //        for (int i = 0; i < 10; i++) {
 //            String value = "my-sync-message-" + i;
 //            // 发送消息

@@ -16,6 +16,8 @@
         <module>rocketmq-demo</module>
         <module>mockito-demo</module>
         <module>protobuf-demo</module>
+        <module>sse-demo</module>
+        <module>kafka-demo</module>
     </modules>
 
     <properties>
