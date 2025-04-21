@@ -1,4 +1,4 @@
-package com.example.redis;
+package com.example.demo.kafka;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -8,8 +8,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @since 2024/7/23 20:44
  */
 @SpringBootApplication
-public class Application {
+public class KafkaApplication {
     public static void main(String[] args) throws Exception {
-        SpringApplication.run(Application.class,args);
+        SpringApplication.run(KafkaApplication.class,args);
     }
 }

@@ -8,15 +8,15 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class KafkaDtsConsumer {
+public class KafkaConsumer {
 
-    @KafkaListener(topics = "rule_telesale_result", concurrency = "2",containerFactory="kafkaListenerContainerFactory1")
+    @KafkaListener(topics = "t", concurrency = "2", containerFactory = "kafkaListenerContainerFactory")
     public void onMessage(ConsumerRecord<byte[], byte[]> record, Acknowledgment ack) throws Exception {
         log.info("topic:{},partition:{},offset:{},key:{},value:{}", record.topic(), record.partition(), record.offset(), record.key(), record.value());
         ack.acknowledge();
     }
 
-//    @KafkaListener(topics = "rule_telesale_result", concurrency = "2",containerFactory="kafkaListenerContainerFactory2")
+    @KafkaListener(topics = "tt", concurrency = "2",containerFactory="kafkaListenerContainerFactory2")
     public void onMessage2(ConsumerRecord<byte[], byte[]> record, Acknowledgment ack) throws Exception {
         log.info("topic:{},partition:{},offset:{},key:{},value:{}", record.topic(), record.partition(), record.offset(), record.key(), record.value());
         ack.acknowledge();

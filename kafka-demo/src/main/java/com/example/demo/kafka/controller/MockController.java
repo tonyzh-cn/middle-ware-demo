@@ -11,13 +11,13 @@ import javax.annotation.Resource;
 @RequestMapping("mock")
 @Slf4j
 public class MockController {
-    @Resource(name = "kafkaTemplate1")
-    private KafkaTemplate<String, String> kafkaTemplate;
+    @Resource(name = "kafkaTemplate2")
+    private KafkaTemplate<String, String> kafkaTemplate2;
 
     @GetMapping("test")
     @ResponseBody
     public String test(){
-        kafkaTemplate.send("rule_telesale_result", "test");
+        kafkaTemplate2.send("tt", "test");
         return "success";
     }
 }
